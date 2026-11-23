@@ -18,6 +18,13 @@
   } catch (e) {}
   var start = parts.some(Boolean) ? [base].concat(parts).join('__').replace(/_+$/, '').slice(0, 64) : base;
   var url = BOT + '?start=' + start;
+  var clickId = q.get('fbclid') || '';
+  if (base === 'go' && /^[A-Za-z0-9_-]{8,512}$/.test(clickId)) {
+    var target = new URL('https://learn.leadspikers.com/meta-telegram.php');
+    target.searchParams.set('ref', start);
+    target.searchParams.set('fbclid', clickId);
+    url = target.href;
+  }
   document.querySelectorAll('.js-telegram-link').forEach(function (link) {
     link.href = url;
     link.target = '_blank';
