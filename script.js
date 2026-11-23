@@ -17,17 +17,56 @@
     }
   } catch (e) {}
   var start = parts.some(Boolean) ? [base].concat(parts).join('__').replace(/_+$/, '').slice(0, 64) : base;
-  var url = BOT + '?start=' + start;
+  var destination = BOT + '?start=' + start;
   var clickId = q.get('fbclid') || '';
-  if (base === 'go' && /^[A-Za-z0-9_-]{8,512}$/.test(clickId)) {
-    var target = new URL('https://learn.leadspikers.com/meta-telegram.php');
-    target.searchParams.set('ref', start);
-    target.searchParams.set('fbclid', clickId);
-    url = target.href;
+  var hasMetaClickId = /^[A-Za-z0-9_-]{8,512}$/.test(clickId);
+  var isPaidMeta = base === 'go' && (hasMetaClickId ||
+    (['facebook', 'instagram', 'meta'].includes(parts[0]) && parts[1] === 'paid-social'));
+  var pixelId = '1692950309097743';
+
+  if (isPaidMeta) {
+    var bridge = new URL('telegram.html', location.href);
+    bridge.searchParams.set('ref', start);
+    if (hasMetaClickId) bridge.searchParams.set('fbclid', clickId);
+    destination = bridge.href;
+
+    if (!window.fbq) {
+      var pixel = function () {
+        if (pixel.callMethod) pixel.callMethod.apply(pixel, arguments);
+        else pixel.queue.push(arguments);
+      };
+      window.fbq = pixel;
+      window._fbq = window._fbq || pixel;
+      pixel.push = pixel;
+      pixel.loaded = true;
+      pixel.version = '2.0';
+      pixel.queue = [];
+      var loader = document.createElement('script');
+      loader.async = true;
+      loader.src = 'https://connect.facebook.net/en_US/fbevents.js';
+      document.head.appendChild(loader);
+    }
+    window.fbq('set', 'autoConfig', false, pixelId);
+    window.fbq('init', pixelId);
   }
+
+  var clickReported = false;
   document.querySelectorAll('.js-telegram-link').forEach(function (link) {
-    link.href = url;
+    link.href = destination;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
+    if (!isPaidMeta) return;
+
+    function reportClick(event) {
+      if (!event.isTrusted || event.defaultPrevented || clickReported) return;
+      clickReported = true;
+      window.fbq('trackSingleCustom', pixelId, 'TelegramClick', {
+        cta: link.dataset.telegramCta
+      });
+    }
+    link.addEventListener('click', reportClick);
+    link.addEventListener('auxclick', function (event) {
+      if (event.button === 1) reportClick(event);
+    });
   });
 })();
