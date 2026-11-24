@@ -29,17 +29,40 @@
       var start = /^[A-Za-z0-9_-]{1,64}$/.test(ref) ? ref : 'go';
       var target = new URL('https://t.me/LS_education_bot');
       target.searchParams.set('start', start);
-      if (/^[A-Za-z0-9_-]{8,512}$/.test(clickId)) {
+      var yclid = params.get('yclid') || '';
+      var fromYandex = params.get('source') === 'yandex';
+      if (fromYandex && /^[0-9]{1,32}$/.test(yclid)) {
+        target = new URL('https://learn.leadspikers.com/yandex-telegram.php');
+        target.searchParams.set('ref', start);
+        target.searchParams.set('yclid', yclid);
+      } else if (/^[A-Za-z0-9_-]{8,512}$/.test(clickId)) {
         target = new URL('https://learn.leadspikers.com/meta-telegram.php');
         target.searchParams.set('ref', start);
         target.searchParams.set('fbclid', clickId);
       }
       var button = document.getElementById('open-telegram');
       button.href = target.href;
-      var redirect = setTimeout(function () {
+      var leaving = false;
+      function openTelegram() {
+        if (leaving) return;
+        leaving = true;
+        clearTimeout(redirect);
         location.replace(target.href);
-      }, 350);
-      button.addEventListener('click', function () { clearTimeout(redirect); });
+      }
+
+      var redirect = setTimeout(openTelegram, fromYandex ? 1800 : 350);
+      button.addEventListener('click', function () {
+        leaving = true;
+        clearTimeout(redirect);
+      });
+      if (fromYandex) {
+        var metrika = document.createElement('script');
+        metrika.src = 'metrika.js';
+        metrika.onload = function () {
+          window.ym(114655053, 'hit', location.href, { callback: openTelegram });
+        };
+        document.head.appendChild(metrika);
+      }
     })();
   </script>
 </body>

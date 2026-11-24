@@ -24,7 +24,14 @@
     (['facebook', 'instagram', 'meta'].includes(parts[0]) && parts[1] === 'paid-social'));
   var pixelId = '1692950309097743';
 
-  if (isPaidMeta) {
+  var yclid = q.get('yclid') || '';
+  if (base === 'go' && /^[0-9]{1,32}$/.test(yclid)) {
+    var yandexBridge = new URL('telegram.html', location.href);
+    yandexBridge.searchParams.set('source', 'yandex');
+    yandexBridge.searchParams.set('ref', start);
+    yandexBridge.searchParams.set('yclid', yclid);
+    destination = yandexBridge.href;
+  } else if (isPaidMeta) {
     var bridge = new URL('telegram.html', location.href);
     bridge.searchParams.set('ref', start);
     if (hasMetaClickId) bridge.searchParams.set('fbclid', clickId);
@@ -55,7 +62,7 @@
     link.href = destination;
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
-    if (!isPaidMeta) return;
+    if (!isPaidMeta || !window.fbq) return;
 
     function reportClick(event) {
       if (!event.isTrusted || event.defaultPrevented || clickReported) return;
