@@ -25,11 +25,16 @@
   var pixelId = '1692950309097743';
 
   var yclid = q.get('yclid') || '';
-  if (base === 'go' && /^[0-9]{1,32}$/.test(yclid)) {
+  var hasYclid = /^[0-9]{1,32}$/.test(yclid);
+  var explicitYandex = q.get('source') === 'yandex' ||
+    /^(yandex|yandex-direct|yandexdirect|direct|ya)$/.test(clean(q.get('utm_source')));
+  var fromYandex = base === 'go' && (hasYclid || (!hasMetaClickId && explicitYandex) ||
+    (!isPaidMeta && /^(yandex|yandex-direct|yandexdirect|direct|ya)$/.test(parts[0] || '')));
+  if (fromYandex) {
     var yandexBridge = new URL('telegram.html', location.href);
     yandexBridge.searchParams.set('source', 'yandex');
     yandexBridge.searchParams.set('ref', start);
-    yandexBridge.searchParams.set('yclid', yclid);
+    if (hasYclid) yandexBridge.searchParams.set('yclid', yclid);
     destination = yandexBridge.href;
   } else if (isPaidMeta) {
     var bridge = new URL('telegram.html', location.href);
@@ -60,7 +65,7 @@
   var clickReported = false;
   document.querySelectorAll('.js-telegram-link').forEach(function (link) {
     link.href = destination;
-    link.target = '_blank';
+    link.target = fromYandex ? '_self' : '_blank';
     link.rel = 'noopener noreferrer';
     if (!isPaidMeta || !window.fbq) return;
 
