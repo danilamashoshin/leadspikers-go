@@ -63,6 +63,15 @@
   }
 
   var clickReported = false;
+  var firstLesson = document.getElementById('lesson-1');
+  if (firstLesson && window.ym && 'IntersectionObserver' in window) {
+    var lessonObserver = new IntersectionObserver(function (entries) {
+      if (!entries.some(function (entry) { return entry.isIntersecting; })) return;
+      lessonObserver.disconnect();
+      window.ym(114655053, 'reachGoal', 'lesson_block_seen');
+    }, { threshold: 0.15 });
+    lessonObserver.observe(firstLesson);
+  }
   document.querySelectorAll('.js-telegram-link').forEach(function (link) {
     link.href = destination;
     link.target = fromYandex ? '_self' : '_blank';
